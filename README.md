@@ -1,5 +1,7 @@
 # serverless-amplify-plugin
 
+![Node.js CI](https://github.com/wizeline/serverless-amplify-plugin/workflows/Node.js%20CI/badge.svg)
+
 A <a href="https://serverless.com/" target="_blank">Serverless Framework</a> plugin that provides simplified syntax for creating <a href="https://aws.amazon.com/amplify/console/" target="_blank">AWS Amplify Console</a> applications. Amplify console provides hosting and continuous deployment of static websites.
 
 ## Usage
