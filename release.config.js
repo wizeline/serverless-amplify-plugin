@@ -1,24 +1,9 @@
 module.exports = {
   "plugins": [
-    [
-      "@semantic-release/commit-analyzer",
-      {
-        "preset": "angular"
-      }
-    ],
-    [
-      "@semantic-release/release-notes-generator",
-      {
-        "preset": "angular"
-      }
-    ],
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    [
-      "@semantic-release/npm",
-      {
-        "npmPublish": false
-      }
-    ],
+    "@semantic-release/npm",
     [
       "@semantic-release/github",
       {
@@ -39,5 +24,7 @@ module.exports = {
       }
     ],
     "@semantic-release/git"
-  ]
+  ],
+  "preset": "angular",
+  "npmPublish": false
 }
