@@ -3,15 +3,13 @@ module.exports = {
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    "@semantic-release/npm",
-    "@semantic-release/github",
+    ["@semantic-release/npm", {
+      "tarballDir": "release"
+    }],
+    ["@semantic-release/github", {
+      "assets": "release/*.tgz"
+    }],
     "@semantic-release/git"
   ],
-  "preset": "angular",
-  "assets": [
-    "index.js",
-    "CHANGELOG.md",
-    "package.json",
-    "package-lock.json"
-  ]
+  "preset": "angular"
 }
