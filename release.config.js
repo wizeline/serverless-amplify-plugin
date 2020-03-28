@@ -4,27 +4,14 @@ module.exports = {
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
     "@semantic-release/npm",
-    [
-      "@semantic-release/github",
-      {
-        "assets": [
-          {
-            "path": "index.js"
-          },
-          {
-            "path": "CHANGELOG.md"
-          },
-          {
-            "path": "package.json"
-          },
-          {
-            "path": "package-lock.json"
-          }
-        ]
-      }
-    ],
+    "@semantic-release/github",
     "@semantic-release/git"
   ],
   "preset": "angular",
-  "npmPublish": false
+  "assets": [
+    "index.js",
+    "CHANGELOG.md",
+    "package.json",
+    "package-lock.json"
+  ]
 }
