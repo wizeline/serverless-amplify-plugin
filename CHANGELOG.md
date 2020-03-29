@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.0.2...v1.1.0) (2020-03-29)
+
+
+### Features
+
+* add buildSpecValues.artifactFiles ([e19b1a8](https://github.com/wizeline/serverless-amplify-plugin/commit/e19b1a8125fa96a9807dfac735e1c3e9dcc062bb))
+
 ## [1.0.2](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.0.1...v1.0.2) (2020-03-28)
 
 
