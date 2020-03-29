@@ -4,12 +4,8 @@ class ServerlessAmplifyPlugin {
   constructor(serverless, options) {
     this.serverless = serverless
     this.options = options
-    // const credentials = serverless.providers.aws.getCredentials()
-    // this.amplifySdk = new serverless.providers.aws.sdk.Amplify(credentials)
     this.hooks = {
       'before:package:finalize': () => this.addAmplify(),
-      // TODO: Get correct hook to run after CloudFormation success
-      'after:deploy:finalize': () => this.startFirstJob(),
     }
     this.variableResolvers = {
       amplify: {
@@ -117,11 +113,6 @@ frontend:
         "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyApp.DefaultDomain}`
       }
     }
-  }
-
-  startFirstJob() {
-    // this.amplifySdk.startJob
-    // See https://github.com/schwamster/serverless-certificate-creator/blob/051a6e93a19b197a1a144eccbf401c85ef88f103/index.js for more examples
   }
 }
 
