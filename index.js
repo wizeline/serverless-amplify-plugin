@@ -20,14 +20,22 @@ class ServerlessAmplifyPlugin {
     return src.slice('amplify:'.length)
   }
 
+  getArtifactFilesYaml(artifactFiles) {
+    return artifactFiles
+      .map(artifactFile => `
+      - '${artifactFile}'`)
+      .join('')
+  }
+
   addAmplify() {
     const { service } = this.serverless
     const { custom, provider, serviceObject } = service
     const { amplify } = custom
-    const { defaultBuildSpecOverrides = {} } = amplify
+    const { buildSpecValues = {} } = amplify
     const {
-      baseDirectory = 'dist'
-    } = defaultBuildSpecOverrides
+      artifactBaseDirectory = 'dist',
+      artifactFiles = ['**/*'],
+    } = buildSpecValues
     const {
       repository,
       accessTokenSecretName = 'AmplifyGithub',
@@ -49,9 +57,8 @@ frontend:
       commands:
         - npm run build
   artifacts:
-    baseDirectory: ${baseDirectory}
-    files:
-      - '**/*'
+    baseDirectory: ${artifactBaseDirectory}
+    files:${this.getArtifactFilesYaml(artifactFiles)}
   cache:
     paths:
       - node_modules/**/*`,

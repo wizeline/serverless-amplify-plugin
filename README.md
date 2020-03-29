@@ -27,6 +27,9 @@ custom:
       version: 0.1
       frontend:
         ...
+    buildSpecValues: # optional
+      artifactBaseDirectory: 'dist' # optional
+      artifactFiles: ['**/*'] # optional
 ```
 
 ### 🔒 Securing your GitHub Personal Access Token Secret
@@ -103,6 +106,22 @@ frontend:
     paths:
       - node_modules/**/*
 ```
+
+### buildSpecValues (optional)
+
+Specify values in the `buildSpec`. Useful so that you don't need to provide your own custom `buildSpec` if you just need to override some values that are commonly different between projects.
+
+#### artifactBaseDirectory (optional)
+
+Sets `frontend.artifacts.baseDirectory` in `buildSpec`.
+
+**Default:** dist
+
+#### artifactFiles (optional)
+
+Sets `frontend.artifacts.baseDirectory` in `buildSpec`.
+
+**Default:** ['**/*']
 
 ## Limitations and future considerations
 

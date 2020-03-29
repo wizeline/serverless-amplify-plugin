@@ -203,10 +203,11 @@ artifacts:
       }
     })
   })
-  it('creates buildSpec based on defaultBuildSpecOverrides', () => {
+  it('creates buildSpec based on buildSpecValues', () => {
     const amplifyConfig = {
-      defaultBuildSpecOverrides: {
-        baseDirectory: 'public'
+      buildSpecValues: {
+        artifactBaseDirectory: 'public',
+        artifactFiles: ['index.js', 'dist/**/*']
       }
     }
     const serverless = makeMockServerless({
@@ -227,7 +228,8 @@ frontend:
   artifacts:
     baseDirectory: public
     files:
-      - '**/*'
+      - 'index.js'
+      - 'dist/**/*'
   cache:
     paths:
       - node_modules/**/*`)
