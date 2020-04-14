@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.1...v1.1.2) (2020-04-14)
+
+
+### Bug Fixes
+
+* **readme:** add banner to readme ([2cad969](https://github.com/wizeline/serverless-amplify-plugin/commit/2cad969b79547b8baf1b43d721ab68c28add68c6))
+
 ## [1.1.1](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.0...v1.1.1) (2020-04-14)
 
 
