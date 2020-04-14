@@ -6,7 +6,9 @@
   <img src="https://raw.githubusercontent.com/wizeline/serverless-amplify-plugin/master/wizeline-amplify-serverless-banner.png" alt="wizeline, serverless, and amplify banner">
 </p>
 
-A <a href="https://serverless.com/" target="_blank">Serverless Framework</a> plugin that provides simplified syntax for creating <a href="https://aws.amazon.com/amplify/console/" target="_blank">AWS Amplify Console</a> applications. Amplify console provides hosting and continuous deployment of static websites.
+A <a href="https://serverless.com/" target="_blank">Serverless Framework</a> plugin that enables you to easily host static websites with <a href="https://aws.amazon.com/amplify/console/" target="_blank">AWS Amplify Console</a> including Continuous Deployment in as few as 3 lines of YAML.
+
+Developed and maintained by <a href="https://www.wizeline.com/" target="_blank">Wizeline</a>. Looking for a partner to help build your software or expand your existing team with veteran engineers, project managers, technical writers and more? Reach out to us at Wizeline.
 
 ## Usage
 
