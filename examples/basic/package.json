@@ -1,5 +1,5 @@
 {
-  "name": "basic",
+  "name": "wizeline-serverless-amplify-plugin-basic-example",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

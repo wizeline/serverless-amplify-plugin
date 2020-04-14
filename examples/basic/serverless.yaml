@@ -1,4 +1,4 @@
-service: serverless-amplify-plugin-basic-example
+service: wizeline-serverless-amplify-plugin-basic-example
 provider:
   name: aws
 plugins:
