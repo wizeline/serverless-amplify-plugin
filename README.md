@@ -13,7 +13,7 @@ Developed and maintained by <a href="https://www.wizeline.com/" target="_blank">
 ## Usage
 
 ```shell
-npm i -D serverless-amplify-plugin
+npm i -D @wizeline/serverless-amplify-plugin
 ```
 
 ```yaml
