@@ -5,7 +5,6 @@ const repository = 'https://github.com/user/repo'
 
 function makeMockServerless({ amplify, overrides = {} } = {}) {
   const serverlessBase = {
-    // getProvider: ,
     service: {
       custom: {
         amplify: {
