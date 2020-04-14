@@ -8,16 +8,19 @@
 
 A <a href="https://serverless.com/" target="_blank">Serverless Framework</a> plugin that enables you to easily host static websites with <a href="https://aws.amazon.com/amplify/console/" target="_blank">AWS Amplify Console</a> including Continuous Deployment in as few as 3 lines of YAML.
 
-Developed and maintained by <a href="https://www.wizeline.com/" target="_blank">Wizeline</a>. Looking for a partner to help build your software or expand your existing team with veteran engineers, project managers, technical writers and more? Reach out to us at Wizeline.
+Developed and maintained by <a href="https://www.wizeline.com/" target="_blank">Wizeline</a>. Wizeline understands that great software is built by great people and teams. If you’d like to partner with Wizeline to build your software or expand your existing team with veteran engineers, project managers, technical writers, <a href="https://www.wizeline.com/contact/" target="_blank">reach out to our team</a>.
 
 ## Usage
+
+### Install @wizeline/serverless-amplify-plugin:
 
 ```shell
 npm i -D @wizeline/serverless-amplify-plugin
 ```
 
+### Create/update your `serverless.yaml`:
+
 ```yaml
-# serverless.yaml
 plugins:
   - serverless-amplify-plugin
 
@@ -26,6 +29,7 @@ custom:
     repository: https://github.com/USER/REPO # required
     accessTokenSecretName: AmplifyGithub # optional
     accessTokenSecretKey: accessToken # optional
+    accessToken: ... # 🔒 optional
     branch: master # optional
     domainName: example.com # optional;
     buildSpec: |- # optional
@@ -38,7 +42,7 @@ custom:
       preBuildWorkingDirectory: packages/ui # optional
 ```
 
-### 🔒 Securing your GitHub Personal Access Token Secret
+### 🔒 Create your GitHub Personal Access Token and store it AWS Secrets Manager
 
 It's important **not** to paste your GitHub Personal Access Token directly into the `accessToken` property. At a minimum, you should use `${{env:GITHUB_PERSONAL_ACCESS_TOKEN}}` along with the <a href="serverless-dotenv-plugin" target="_blank">serverless-dotenv-plugin</a>, however, this will still be visible in the CloudFormation template and logs.
 
@@ -69,11 +73,11 @@ accessTokenSecretKey: personalAccessToken
 
 **Default:** accessToken
 
-### 🔒 accessToken  (required*)
+### 🔒 accessToken (optional)
 
 A <a href="https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line" target="_blank">GitHub Personal Access Token</a> with `repo` permissions. Amplify Console sets up a <a href="https://developer.github.com/webhooks/" target="_blank">GitHub Webhook</a> so that it can be notified of new commits to build and deploy any changes.
 
-🔒 This is a secret! It's recommended to store this in <a href="https://aws.amazon.com/secrets-manager/" target="_blank">AWS Secrets Manager</a>.
+🔒 This is a secret! It's recommended to store your access token in <a href="https://aws.amazon.com/secrets-manager/" target="_blank">AWS Secrets Manager</a> and reference it in this property with `accessToken: '{{resolve:secretsmanager:AmplifyGithub:SecretString:accessToken}}'`. Alternatively, specify `accessTokenSecretName` and `accessTokenSecretKey` properties.
 
 ### branch (optional)
 
