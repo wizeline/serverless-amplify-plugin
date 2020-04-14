@@ -1,3 +1,10 @@
+## [1.1.8](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.7...v1.1.8) (2020-04-14)
+
+
+### Bug Fixes
+
+* **readme:** fix installation instructions in README ([5b0c502](https://github.com/wizeline/serverless-amplify-plugin/commit/5b0c502dc595cc1f9dc964078509cc4ef40b11eb))
+
 ## [1.1.7](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.6...v1.1.7) (2020-04-14)
 
 
