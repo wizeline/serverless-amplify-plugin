@@ -27,6 +27,19 @@ class ServerlessAmplifyPlugin {
       .join('')
   }
 
+  getPreBuildCommands(preBuildWorkingDirectory) {
+    const cdWorkingDirectoryCommand = preBuildWorkingDirectory ? `cd ${preBuildWorkingDirectory}` : null
+    const commands = [
+      cdWorkingDirectoryCommand,
+      'npm ci'
+    ]
+    return commands
+      .filter(command => command)
+      .map(command => `
+        - ${command}`)
+      .join('')
+  }
+
   addAmplify() {
     const { service } = this.serverless
     const { custom, provider, serviceObject } = service
@@ -35,7 +48,10 @@ class ServerlessAmplifyPlugin {
     const {
       artifactBaseDirectory = 'dist',
       artifactFiles = ['**/*'],
+      preBuildWorkingDirectory
     } = buildSpecValues
+    const preBuildCommands = this.getPreBuildCommands(preBuildWorkingDirectory)
+
     const {
       repository,
       accessTokenSecretName = 'AmplifyGithub',
@@ -51,8 +67,7 @@ class ServerlessAmplifyPlugin {
 frontend:
   phases:
     preBuild:
-      commands:
-        - npm ci
+      commands:${preBuildCommands}
     build:
       commands:
         - npm run build

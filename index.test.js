@@ -206,7 +206,8 @@ artifacts:
     const amplifyConfig = {
       buildSpecValues: {
         artifactBaseDirectory: 'public',
-        artifactFiles: ['index.js', 'dist/**/*']
+        artifactFiles: ['index.js', 'dist/**/*'],
+        preBuildWorkingDirectory: 'packages/ui'
       }
     }
     const serverless = makeMockServerless({
@@ -220,6 +221,7 @@ frontend:
   phases:
     preBuild:
       commands:
+        - cd packages/ui
         - npm ci
     build:
       commands:

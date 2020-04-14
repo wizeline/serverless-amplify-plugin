@@ -35,6 +35,7 @@ custom:
     buildSpecValues: # optional
       artifactBaseDirectory: 'dist' # optional
       artifactFiles: ['**/*'] # optional
+      preBuildWorkingDirectory: packages/ui # optional
 ```
 
 ### 🔒 Securing your GitHub Personal Access Token Secret
@@ -115,17 +116,25 @@ frontend:
 
 Specify values in the `buildSpec`. Useful so that you don't need to provide your own custom `buildSpec` if you just need to override some values that are commonly different between projects.
 
-#### artifactBaseDirectory (optional)
+#### buildSpecValues.artifactBaseDirectory (optional)
 
 Sets `frontend.artifacts.baseDirectory` in `buildSpec`.
 
 **Default:** dist
 
-#### artifactFiles (optional)
+#### buildSpecValues.artifactFiles (optional)
 
-Sets `frontend.artifacts.baseDirectory` in `buildSpec`.
+Sets `frontend.artifacts.files` in `buildSpec`.
 
 **Default:** ['**/*']
+
+#### buildSpecValues.preBuildWorkingDirectory (optional)
+
+Adds a command to the `frontend.preBuild.commands` list in `buildSpec` that `cd`s into the path specified. This is especially helpful for Monorepos.
+
+Note: You may also need to prefix **buildSpecValues.artifactBaseDirectory** with this same path if it builds into that directory.
+
+**Default:** *None - uses project root*
 
 ## Limitations and future considerations
 
