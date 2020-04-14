@@ -44,7 +44,7 @@ It's important **not** to paste your GitHub Personal Access Token directly into 
 The recommended way is to store your secret in <a href="https://aws.amazon.com/secrets-manager/" target="_blank">AWS Secrets Manager</a>. You can do this via the AWS Console or by running this command (ensure your profile and region are correct):
 
 ```shell
-aws secretsmanager create-secret --name AmplifyGithub --secret-string '{"accessToken":"82dcc67482dcc67482dcc67482dcc67482dcc67482dcc674"}' --profile YOUR_PROFILE --region YOUR_REGION
+aws secretsmanager create-secret --name AmplifyGithub --secret-string '{"accessToken":"YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"}' --profile YOUR_PROFILE --region YOUR_REGION
 ```
 
 ## Options
