@@ -1,3 +1,10 @@
+## [1.1.5](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.4...v1.1.5) (2020-04-14)
+
+
+### Bug Fixes
+
+* test semantic-release npm publish ([58d9f3a](https://github.com/wizeline/serverless-amplify-plugin/commit/58d9f3a45d7af816411c81dc43b2f9ff13019833))
+
 ## [1.1.4](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.3...v1.1.4) (2020-04-14)
 
 
