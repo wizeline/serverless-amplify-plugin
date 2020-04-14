@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.8...v1.2.0) (2020-04-14)
+
+
+### Features
+
+* add buildSpecValues.preBuildWorkingDirectory for monorepo support ([0e64e87](https://github.com/wizeline/serverless-amplify-plugin/commit/0e64e87cc9264ea5f27487eeed44c55305a3a1cd))
+
 ## [1.1.8](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.1.7...v1.1.8) (2020-04-14)
 
 
