@@ -63,7 +63,6 @@ accessTokenSecretKey: personalAccessToken
 
 **Default:** accessToken
 
-
 ### 🔒 accessToken  (required*)
 
 A <a href="https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line" target="_blank">GitHub Personal Access Token</a> with `repo` permissions. Amplify Console sets up a <a href="https://developer.github.com/webhooks/" target="_blank">GitHub Webhook</a> so that it can be notified of new commits to build and deploy any changes.
