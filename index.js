@@ -80,60 +80,116 @@ frontend:
     } = amplify
     const { Resources, Outputs } = provider.compiledCloudFormationTemplate
     const namePascalCase = pascalCase(name)
-    Resources[`${namePascalCase}AmplifyApp`] = {
-      Type: 'AWS::Amplify::App',
-      Properties: {
-        Name: name,
-        Repository: repository,
-        AccessToken: accessToken,
-        BuildSpec: buildSpec
-      }
-    }
 
-    Resources[`${namePascalCase}AmplifyBranch`] = {
-      Type: 'AWS::Amplify::Branch',
-      Properties: {
-        AppId: { 'Fn::GetAtt': [`${namePascalCase}AmplifyApp`, 'AppId'] },
-        BranchName: branch,
-        EnableAutoBuild: enableAutoBuild,
-        Stage: stage
-      }
+    addBaseResourcesAndOutputs({
+      Resources,
+      Outputs,
+      name,
+      repository,
+      accessToken,
+      buildSpec,
+      namePascalCase,
+    })
+
+    if (branch) {
+      addBranch({
+        Resources,
+        namePascalCase,
+        branch,
+        enableAutoBuild,
+        stage
+      })
     }
 
     if (domainName) {
-      if (redirectNakedToWww) {
-        Resources[`${namePascalCase}AmplifyApp`].Properties.CustomRules = {
-          Source: `https://${domainName}`,
-          Target: `https://www.${domainName}`,
-          Status: "302"
-        }
-      }
-
-      Resources[`${namePascalCase}AmplifyDomain`] = {
-        Type: 'AWS::Amplify::Domain',
-        Properties: {
-          DomainName: domainName,
-          AppId: { 'Fn::GetAtt': [`${namePascalCase}AmplifyApp`, 'AppId'] },
-          SubDomainSettings: [
-            {
-              Prefix: '',
-              BranchName: { 'Fn::GetAtt': [`${namePascalCase}AmplifyBranch`, 'BranchName'] }
-            }
-          ]
-        }
-      }
-
-      Outputs[`${namePascalCase}AmplifyBranchUrl`] = {
-        "Value": {
-          "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyDomain.DomainName}`
-        }
-      }
+      addDomainName({
+        Resources,
+        Outputs,
+        redirectNakedToWww,
+        namePascalCase,
+        domainName
+      })
     }
+  }
+}
 
-    Outputs[[`${namePascalCase}AmplifyDefaultDomain`]] = {
-      "Value": {
-        "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyApp.DefaultDomain}`
-      }
+function addBaseResourcesAndOutputs({
+  Resources,
+  name,
+  repository,
+  accessToken,
+  buildSpec,
+  Outputs,
+  namePascalCase,
+}) {
+  Resources[`${namePascalCase}AmplifyApp`] = {
+    Type: 'AWS::Amplify::App',
+    Properties: {
+      Name: name,
+      Repository: repository,
+      AccessToken: accessToken,
+      BuildSpec: buildSpec
+    }
+  }
+
+  Outputs[[`${namePascalCase}AmplifyDefaultDomain`]] = {
+    "Value": {
+      "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyApp.DefaultDomain}`
+    }
+  }
+}
+
+function addBranch({
+  Resources,
+  namePascalCase,
+  branch,
+  enableAutoBuild,
+  stage
+}) {
+  Resources[`${namePascalCase}AmplifyBranch`] = {
+    Type: 'AWS::Amplify::Branch',
+    Properties: {
+      AppId: { 'Fn::GetAtt': [`${namePascalCase}AmplifyApp`, 'AppId'] },
+      BranchName: branch,
+      EnableAutoBuild: enableAutoBuild,
+      Stage: stage
+    }
+  }
+}
+
+function addDomainName({
+  Resources,
+  Outputs,
+  redirectNakedToWww,
+  namePascalCase,
+  domainName
+}) {
+
+  if (redirectNakedToWww) {
+    Resources[`${namePascalCase}AmplifyApp`].Properties.CustomRules = {
+      Source: `https://${domainName}`,
+      Target: `https://www.${domainName}`,
+      Status: "302"
+    }
+  }
+
+  Resources[`${namePascalCase}AmplifyDomain`] = {
+    Type: 'AWS::Amplify::Domain',
+    Properties: {
+      DomainName: domainName,
+      AppId: { 'Fn::GetAtt': [`${namePascalCase}AmplifyApp`, 'AppId'] },
+      SubDomainSettings: [
+        {
+          Prefix: '',
+          BranchName: { 'Fn::GetAtt': [`${namePascalCase}AmplifyBranch`, 'BranchName'] }
+        }
+      ]
+    }
+  }
+
+  Outputs[`${namePascalCase}AmplifyBranchUrl`] = {
+    "Value": {
+      "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyDomain.DomainName}`
     }
   }
 }
