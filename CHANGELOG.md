@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.2.1...v1.3.0) (2020-05-01)
+
+
+### Features
+
+* set empty branch to skip creating a Branch resource ([98a7832](https://github.com/wizeline/serverless-amplify-plugin/commit/98a7832e8512ef13fe05b18e07d4e9a7f103fe90))
+
 ## [1.2.1](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.2.0...v1.2.1) (2020-04-14)
 
 
