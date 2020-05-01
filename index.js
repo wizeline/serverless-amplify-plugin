@@ -16,31 +16,7 @@ class ServerlessAmplifyPlugin {
     }
   }
 
-  amplifyVariableResolver(src) {
-    return src.slice('amplify:'.length)
-  }
-
-  getArtifactFilesYaml(artifactFiles) {
-    return artifactFiles
-      .map(artifactFile => `
-      - '${artifactFile}'`)
-      .join('')
-  }
-
-  getPreBuildCommands(preBuildWorkingDirectory) {
-    const cdWorkingDirectoryCommand = preBuildWorkingDirectory ? `cd ${preBuildWorkingDirectory}` : null
-    const commands = [
-      cdWorkingDirectoryCommand,
-      'npm ci'
-    ]
-    return commands
-      .filter(command => command)
-      .map(command => `
-        - ${command}`)
-      .join('')
-  }
-
-  addAmplify() {
+  addAmplifyResources() {
     const { service } = this.serverless
     const { custom, provider, serviceObject } = service
     const { amplify } = custom
@@ -50,7 +26,7 @@ class ServerlessAmplifyPlugin {
       artifactFiles = ['**/*'],
       preBuildWorkingDirectory
     } = buildSpecValues
-    const preBuildCommands = this.getPreBuildCommands(preBuildWorkingDirectory)
+    const preBuildCommands = getPreBuildCommands(preBuildWorkingDirectory)
 
     const {
       repository,
@@ -73,7 +49,7 @@ frontend:
         - npm run build
   artifacts:
     baseDirectory: ${artifactBaseDirectory}
-    files:${this.getArtifactFilesYaml(artifactFiles)}
+    files:${getArtifactFilesYaml(artifactFiles)}
   cache:
     paths:
       - node_modules/**/*`,
@@ -192,6 +168,31 @@ function addDomainName({
       "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyDomain.DomainName}`
     }
   }
+}
+
+
+function amplifyVariableResolver(src) {
+  return src.slice('amplify:'.length)
+}
+
+function getArtifactFilesYaml(artifactFiles) {
+  return artifactFiles
+    .map(artifactFile => `
+      - '${artifactFile}'`)
+    .join('')
+}
+
+function getPreBuildCommands(preBuildWorkingDirectory) {
+  const cdWorkingDirectoryCommand = preBuildWorkingDirectory ? `cd ${preBuildWorkingDirectory}` : null
+  const commands = [
+    cdWorkingDirectoryCommand,
+    'npm ci'
+  ]
+  return commands
+    .filter(command => command)
+    .map(command => `
+        - ${command}`)
+    .join('')
 }
 
 module.exports = ServerlessAmplifyPlugin
