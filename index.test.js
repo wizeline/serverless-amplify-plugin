@@ -247,4 +247,16 @@ frontend:
     serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
     expect(serverless.service.provider.compiledCloudFormationTemplate.Resources.MyServiceAmplifyApp.Properties.AccessToken).toStrictEqual(serverless.service.custom.amplify.accessToken)
   })
+  it('doesn\'t create an AWS::Amplify::Branch resource if branch is empty', () => {
+    const amplifyConfig = {
+      branch: ''
+    }
+    const serverless = makeMockServerless({
+      amplify: amplifyConfig
+    })
+
+    const serverlessAmplifyPluginInstance = new ServerlessAmplifyPlugin(serverless)
+    serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
+    expect(serverless.service.provider.compiledCloudFormationTemplate.Resources.MyServiceAmplifyBranch).toBeUndefined()
+  })
 })
