@@ -1,6 +1,6 @@
 {
   "name": "@wizeline/serverless-amplify-plugin",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Serverless Framework Plugin for creating Amplify Console Apps.",
   "main": "index.js",
   "scripts": {

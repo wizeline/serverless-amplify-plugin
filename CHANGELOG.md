@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.3.0...v1.4.0) (2020-05-04)
+
+
+### Features
+
+* package and deploy UI if isManual ([7af8ac3](https://github.com/wizeline/serverless-amplify-plugin/commit/7af8ac3b779af4d075900708be1a35a7b41b9594))
+
 # [1.3.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.2.1...v1.3.0) (2020-05-01)
 
 
