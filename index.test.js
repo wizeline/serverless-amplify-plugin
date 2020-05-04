@@ -3,6 +3,16 @@ const ServerlessAmplifyPlugin = require('./index')
 
 const repository = 'https://github.com/user/repo'
 
+beforeAll(() => {
+  jest.spyOn(ServerlessAmplifyPlugin.prototype, 'packageWeb').mockImplementation(() => 'Hello')
+  jest.spyOn(ServerlessAmplifyPlugin.prototype, 'describeStack').mockImplementation(() => 'Hello')
+  jest.spyOn(ServerlessAmplifyPlugin.prototype, 'deployWeb').mockImplementation(() => 'Hello')
+});
+
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
 function makeMockServerless({ amplify, overrides = {} } = {}) {
   const serverlessBase = {
     service: {

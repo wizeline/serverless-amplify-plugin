@@ -1,24 +1,65 @@
+const util = require('util')
+const path = require('path')
+const { spawn } = require('child_process')
+const fs = require('fs')
+const archiver = require('archiver')
 const { pascalCase } = require('pascal-case')
+const { put } = require('request-promise')
+const ora = require('ora')
 
 class ServerlessAmplifyPlugin {
   constructor(serverless, options) {
     this.serverless = serverless
     this.options = options
     this.hooks = {
-      'before:package:finalize': () => this.addAmplify(),
+      'before:package:finalize': async () => {
+        this.setAmplifyOptions()
+        this.namePascalCase = pascalCase(this.amplifyOptions.name)
+        this.addAmplifyResources()
+
+        if (!this.amplifyOptions.isManual) return
+
+        this.zipFilePath = '.serverless/ui.zip'
+
+        const amplifyClient = new this.serverless.providers.aws.sdk.Amplify({
+          region: this.serverless.getProvider('aws').getRegion()
+        })
+        this.amplifyClient = amplifyClient
+        await this.packageWeb()
+        await this.describeStack({ isPackageStep: true })
+
+        const stackExists = Boolean(this.amplifyAppId)
+        if (stackExists) {
+          const { jobId } = await createAmplifyDeployment({
+            amplifyClient,
+            appId: this.amplifyAppId,
+            branchName: this.amplifyOptions.branch,
+            zipFilePath: this.zipFilePath
+          })
+          this.amplifyDeploymentJobId = jobId
+        }
+      },
+      'after:deploy:deploy': () => this.amplifyOptions.isManual && this.deployWeb(),
+      'after:rollback:initialize': () => this.amplifyOptions.isManual && this.rollbackAmplify()
     }
+    // this.commands = {
+    //   deploy: {
+    //     lifecycleEvents: ['deploy'],
+    //   },
+    // }
     this.variableResolvers = {
       amplify: {
-        resolver: this.amplifyVariableResolver,
+        resolver: amplifyVariableResolver,
         isDisabledAtPrepopulation: true,
         serviceName: 'serverless-amplify..'
       }
     }
   }
 
-  addAmplifyResources() {
-    const { service } = this.serverless
-    const { custom, provider, serviceObject } = service
+  setAmplifyOptions() {
+    const { serverless } = this
+    const { service } = serverless
+    const { custom, serviceObject } = service
     const { amplify } = custom
     const { buildSpecValues = {} } = amplify
     const {
@@ -34,6 +75,7 @@ class ServerlessAmplifyPlugin {
       accessTokenSecretKey = 'accessToken',
       accessToken = `{{resolve:secretsmanager:${accessTokenSecretName}:SecretString:${accessTokenSecretKey}}}`,
       branch = 'master',
+      isManual = false,
       domainName,
       enableAutoBuild = true,
       redirectNakedToWww = false,
@@ -54,13 +96,144 @@ frontend:
     paths:
       - node_modules/**/*`,
     } = amplify
+
+    this.amplifyOptions = {
+      repository,
+      accessTokenSecretName,
+      accessTokenSecretKey,
+      accessToken,
+      branch,
+      isManual,
+      domainName,
+      enableAutoBuild,
+      redirectNakedToWww,
+      name,
+      stage,
+      buildSpec,
+    }
+  }
+
+  packageWeb() {
+    return new Promise((resolve, reject) => {
+      const command = 'npm run build'
+      let args = command.split(/\s+/);
+      const cmd = args[0];
+      args = args.slice(1);
+      const baseDirectory = path.join(this.serverless.config.servicePath, 'packages', 'ui')
+      const execution = spawn(cmd, args, {
+        cwd: baseDirectory,
+        env: process.env,
+        stdio: 'inherit'
+      })
+      execution.on('exit', (code) => {
+        if (code === 0) {
+          const zipSpinner = ora()
+          zipSpinner.start(`Zipping to ${this.zipFilePath}...`)
+          const output = fs.createWriteStream(this.zipFilePath);
+          const buildDirectory = './packages/ui/build'
+          const archive = archiver('zip');
+          output.on('close', () => {
+            zipSpinner.succeed('UI zip created!')
+            resolve(this.zipFilePath);
+          });
+
+          archive.on('error', (err) => {
+            zipSpinner.fail(err)
+            reject(err);
+          });
+          archive.pipe(output);
+          archive.directory(buildDirectory, false);
+          archive.finalize();
+        } else {
+          reject(code);
+        }
+      });
+    });
+  }
+
+  async describeStack({ isPackageStep }) {
+    const describeStackSpinner = ora()
+    const stackName = util.format('%s-%s',
+      this.serverless.service.getServiceName(),
+      this.serverless.getProvider('aws').getStage()
+    )
+    describeStackSpinner.start('Getting stack outputs...')
+    try {
+      const stacks = await this.serverless.getProvider('aws').request(
+        'CloudFormation',
+        'describeStacks',
+        { StackName: stackName },
+        this.serverless.getProvider('aws').getStage(),
+        this.serverless.getProvider('aws').getRegion()
+      )
+      if (!stacks.Stacks.length) {
+        if (isPackageStep) {
+          describeStackSpinner.succeed(`Couldn't get stack ${stackName}. It might not yet exist.`)
+        } else {
+          describeStackSpinner.fail(`Couldn't get stack ${stackName}`)
+        }
+        return
+      }
+      const stack = stacks.Stacks[0]
+      const { Outputs } = stack
+      const amplifyDefualtDomainOutputKey = getAmplifyDefaultDomainOutputKey(this.namePascalCase)
+      const amplifyDefualtDomainOutput = Outputs.find(output => output.OutputKey === amplifyDefualtDomainOutputKey)
+      const amplifyDefualtDomainParts = amplifyDefualtDomainOutput.OutputValue.split('.')
+      const amplifyAppId = amplifyDefualtDomainParts[1]
+
+      describeStackSpinner.succeed(`Got Amplify App ID: ${amplifyAppId}`)
+
+      this.amplifyAppId = amplifyAppId
+    } catch (error) {
+      describeStackSpinner.fail(error)
+      throw error
+    }
+  }
+
+  async deployWeb() {
+    if (!this.amplifyDeploymentJobId) {
+      await this.describeStack({ isPackageStep: false })
+
+      const { jobId } = await createAmplifyDeployment({
+        amplifyClient,
+        appId: this.amplifyAppId,
+        branchName: this.amplifyOptions.branch,
+        zipFilePath: this.zipFilePath,
+      })
+      this.amplifyDeploymentJobId = jobId
+    }
+
+    return publishFileToAmplify({
+      appId: this.amplifyAppId,
+      branchName: this.amplifyOptions.branch,
+      jobId: this.amplifyDeploymentJobId,
+      amplifyClient: this.amplifyClient,
+    })
+  }
+
+  addAmplifyResources() {
+    const { namePascalCase, serverless } = this
+    const { service } = serverless
+    const { provider } = service
     const { Resources, Outputs } = provider.compiledCloudFormationTemplate
-    const namePascalCase = pascalCase(name)
+    const {
+      repository,
+      accessToken,
+      branch,
+      isManual,
+      domainName,
+      enableAutoBuild,
+      redirectNakedToWww,
+      name,
+      stage,
+      buildSpec,
+    } = this.amplifyOptions
 
     addBaseResourcesAndOutputs({
       Resources,
       Outputs,
       name,
+      isManual,
       repository,
       accessToken,
       buildSpec,
@@ -87,11 +260,136 @@ frontend:
       })
     }
   }
+  rollbackAmplify() { }
+}
+
+async function createAmplifyDeployment({
+  amplifyClient,
+  appId,
+  branchName,
+  zipFilePath
+}) {
+  const createAmplifyDeploymentSpinner = ora()
+  createAmplifyDeploymentSpinner.start('Creating Amplify Deployment...')
+  try {
+    const params = {
+      appId,
+      branchName,
+    }
+
+    await cancelAllPendingJob(appId, branchName, amplifyClient)
+    const { zipUploadUrl, jobId } = await amplifyClient
+      .createDeployment(params)
+      .promise()
+    createAmplifyDeploymentSpinner.succeed('Amplify Deployment created!')
+    const uploadToS3Spinner = ora()
+    uploadToS3Spinner.start('Uploading UI package to S3...')
+    await httpPutFile(zipFilePath, zipUploadUrl)
+    uploadToS3Spinner.succeed('UI Package uploaded to S3!')
+    return { jobId }
+  } catch (error) {
+    createAmplifyDeploymentSpinner.fail('Failed creating Amplify Deployment')
+    throw error
+  }
+}
+
+async function publishFileToAmplify({
+  appId,
+  branchName,
+  jobId,
+  amplifyClient,
+}) {
+  const DEPLOY_ARTIFACTS_MESSAGE = 'Deploying build artifacts to the Amplify Console..'
+  const DEPLOY_COMPLETE_MESSAGE = 'Deployment complete!'
+  const DEPLOY_FAILURE_MESSAGE = 'Deployment failed!'
+
+  const publishSpinner = ora()
+  try {
+    const params = {
+      appId,
+      branchName,
+    }
+    publishSpinner.start(DEPLOY_ARTIFACTS_MESSAGE)
+    await amplifyClient.startDeployment({ ...params, jobId }).promise()
+    await waitJobToSucceed({ ...params, jobId }, amplifyClient)
+    publishSpinner.succeed(DEPLOY_COMPLETE_MESSAGE)
+  } catch (err) {
+    publishSpinner.fail(DEPLOY_FAILURE_MESSAGE)
+    throw err
+  }
+}
+
+async function cancelAllPendingJob(appId, branchName, amplifyClient) {
+  const params = {
+    appId,
+    branchName,
+  };
+  const { jobSummaries } = await amplifyClient.listJobs(params).promise();
+  for (const jobSummary of jobSummaries) {
+    const { jobId, status } = jobSummary;
+    if (status === 'PENDING' || status === 'RUNNING') {
+      const job = { ...params, jobId };
+      await amplifyClient.stopJob(job).promise();
+    }
+  }
+}
+
+function waitJobToSucceed(job, amplifyClient) {
+  return new Promise(async (resolve, reject) => {
+    const timeout = setTimeout(() => {
+      console.log('Job Timeout before succeeded');
+      reject();
+    }, 1000 * 60 * 10);
+    let processing = true;
+    try {
+      while (processing) {
+        const getJobResult = await amplifyClient.getJob(job).promise();
+        const jobSummary = getJobResult.job.summary;
+        if (jobSummary.status === 'FAILED') {
+          console.log(`Job failed.${JSON.stringify(jobSummary)}`);
+          clearTimeout(timeout);
+          processing = false;
+          resolve();
+        }
+        if (jobSummary.status === 'SUCCEED') {
+          clearTimeout(timeout);
+          processing = false;
+          resolve();
+        }
+        await sleep(1000 * 3);
+      }
+    } catch (err) {
+      processing = false;
+      reject(err);
+    }
+  });
+}
+
+function sleep(ms) {
+  return new Promise((resolve, reject) => {
+    try {
+      setTimeout(resolve, ms);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function httpPutFile(filePath, url) {
+  await put({
+    body: fs.readFileSync(filePath),
+    url,
+  });
+}
+
+function getAmplifyDefaultDomainOutputKey(namePascalCase) {
+  return `${namePascalCase}AmplifyDefaultDomain`
 }
 
 function addBaseResourcesAndOutputs({
   Resources,
   name,
+  isManual,
   repository,
   accessToken,
   buildSpec,
@@ -102,13 +400,16 @@ function addBaseResourcesAndOutputs({
     Type: 'AWS::Amplify::App',
     Properties: {
       Name: name,
-      Repository: repository,
-      AccessToken: accessToken,
       BuildSpec: buildSpec
     }
   }
 
-  Outputs[[`${namePascalCase}AmplifyDefaultDomain`]] = {
+  if (!isManual) {
+    Resources[`${namePascalCase}AmplifyApp`].Properties.Repository = repository
+    Resources[`${namePascalCase}AmplifyApp`].Properties.AccessToken = accessToken
+  }
+
+  Outputs[getAmplifyDefaultDomainOutputKey(namePascalCase)] = {
     "Value": {
       "Fn::Sub": `\${${namePascalCase}AmplifyBranch.BranchName}.\${${namePascalCase}AmplifyApp.DefaultDomain}`
     }
