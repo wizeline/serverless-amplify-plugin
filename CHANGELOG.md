@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.4.0...v1.5.0) (2020-05-04)
+
+
+### Features
+
+* manual deploy updates: ([46dcb1b](https://github.com/wizeline/serverless-amplify-plugin/commit/46dcb1b333264c47c049799fa4f84d78fab78e2f))
+
 # [1.4.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.3.0...v1.4.0) (2020-05-04)
 
 
