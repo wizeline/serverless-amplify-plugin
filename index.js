@@ -65,7 +65,7 @@ class ServerlessAmplifyPlugin {
     const {
       artifactBaseDirectory = 'dist',
       artifactFiles = ['**/*'],
-      preBuildWorkingDirectory
+      preBuildWorkingDirectory = '.'
     } = buildSpecValues
     const preBuildCommands = getPreBuildCommands(preBuildWorkingDirectory)
 
@@ -76,8 +76,8 @@ class ServerlessAmplifyPlugin {
       accessToken = `{{resolve:secretsmanager:${accessTokenSecretName}:SecretString:${accessTokenSecretKey}}}`,
       branch = 'master',
       isManual = false,
+      enableAutoBuild = !isManual,
       domainName,
-      enableAutoBuild = true,
       redirectNakedToWww = false,
       name = serviceObject.name,
       stage = 'PRODUCTION',
@@ -110,6 +110,8 @@ frontend:
       name,
       stage,
       buildSpec,
+      artifactBaseDirectory,
+      preBuildWorkingDirectory,
     }
   }
 
@@ -119,7 +121,7 @@ frontend:
       let args = command.split(/\s+/);
       const cmd = args[0];
       args = args.slice(1);
-      const baseDirectory = path.join(this.serverless.config.servicePath, 'packages', 'ui')
+      const baseDirectory = path.join(this.serverless.config.servicePath, this.amplifyOptions.preBuildWorkingDirectory)
       const execution = spawn(cmd, args, {
         cwd: baseDirectory,
         env: process.env,
@@ -130,7 +132,7 @@ frontend:
           const zipSpinner = ora()
           zipSpinner.start(`Zipping to ${this.zipFilePath}...`)
           const output = fs.createWriteStream(this.zipFilePath);
-          const buildDirectory = './packages/ui/build'
+          const buildDirectory = this.amplifyOptions.artifactBaseDirectory
           const archive = archiver('zip');
           output.on('close', () => {
             zipSpinner.succeed('UI zip created!')
@@ -158,36 +160,33 @@ frontend:
       this.serverless.getProvider('aws').getStage()
     )
     describeStackSpinner.start('Getting stack outputs...')
+    let stacks
     try {
-      const stacks = await this.serverless.getProvider('aws').request(
+      stacks = await this.serverless.getProvider('aws').request(
         'CloudFormation',
         'describeStacks',
         { StackName: stackName },
         this.serverless.getProvider('aws').getStage(),
         this.serverless.getProvider('aws').getRegion()
       )
-      if (!stacks.Stacks.length) {
-        if (isPackageStep) {
-          describeStackSpinner.succeed(`Couldn't get stack ${stackName}. It might not yet exist.`)
-        } else {
-          describeStackSpinner.fail(`Couldn't get stack ${stackName}`)
-        }
-        return
-      }
-      const stack = stacks.Stacks[0]
-      const { Outputs } = stack
-      const amplifyDefualtDomainOutputKey = getAmplifyDefaultDomainOutputKey(this.namePascalCase)
-      const amplifyDefualtDomainOutput = Outputs.find(output => output.OutputKey === amplifyDefualtDomainOutputKey)
-      const amplifyDefualtDomainParts = amplifyDefualtDomainOutput.OutputValue.split('.')
-      const amplifyAppId = amplifyDefualtDomainParts[1]
-
-      describeStackSpinner.succeed(`Got Amplify App ID: ${amplifyAppId}`)
-
-      this.amplifyAppId = amplifyAppId
     } catch (error) {
-      describeStackSpinner.fail(error)
-      throw error
+      if (isPackageStep) {
+        describeStackSpinner.succeed(`Couldn't get stack ${stackName}. It might not yet exist.`)
+      } else {
+        describeStackSpinner.fail(`Couldn't get stack ${stackName}`)
+      }
+      return
     }
+    const stack = stacks.Stacks[0]
+    const { Outputs } = stack
+    const amplifyDefualtDomainOutputKey = getAmplifyDefaultDomainOutputKey(this.namePascalCase)
+    const amplifyDefualtDomainOutput = Outputs.find(output => output.OutputKey === amplifyDefualtDomainOutputKey)
+    const amplifyDefualtDomainParts = amplifyDefualtDomainOutput.OutputValue.split('.')
+    const amplifyAppId = amplifyDefualtDomainParts[1]
+
+    describeStackSpinner.succeed(`Got Amplify App ID: ${amplifyAppId}`)
+
+    this.amplifyAppId = amplifyAppId
   }
 
   async deployWeb() {
@@ -195,7 +194,7 @@ frontend:
       await this.describeStack({ isPackageStep: false })
 
       const { jobId } = await createAmplifyDeployment({
-        amplifyClient,
+        amplifyClient: this.amplifyClient,
         appId: this.amplifyAppId,
         branchName: this.amplifyOptions.branch,
         zipFilePath: this.zipFilePath,
@@ -484,7 +483,7 @@ function getArtifactFilesYaml(artifactFiles) {
 }
 
 function getPreBuildCommands(preBuildWorkingDirectory) {
-  const cdWorkingDirectoryCommand = preBuildWorkingDirectory ? `cd ${preBuildWorkingDirectory}` : null
+  const cdWorkingDirectoryCommand = preBuildWorkingDirectory && preBuildWorkingDirectory !== '.' ? `cd ${preBuildWorkingDirectory}` : null
   const commands = [
     cdWorkingDirectoryCommand,
     'npm ci'
