@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.6.0...v1.6.1) (2020-05-05)
+
+
+### Bug Fixes
+
+* use specified profile for amplify client ([65b9bcd](https://github.com/wizeline/serverless-amplify-plugin/commit/65b9bcdbacd9bfe5ca047fad82c1b63e3ead129f))
+
 # [1.6.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.5.1...v1.6.0) (2020-05-05)
 
 
