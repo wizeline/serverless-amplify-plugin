@@ -21,9 +21,12 @@ class ServerlessAmplifyPlugin {
 
         this.zipFilePath = '.serverless/ui.zip'
 
+        const credentials = new this.serverless.providers.aws.sdk.SharedIniFileCredentials({ profile: this.serverless.getProvider('aws').getProfile() })
         const amplifyClient = new this.serverless.providers.aws.sdk.Amplify({
-          region: this.serverless.getProvider('aws').getRegion()
+          region: this.serverless.getProvider('aws').getRegion(),
+          credentials
         })
+
         this.amplifyClient = amplifyClient
         await this.describeStack({ isPackageStep: true })
 
