@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.5.0...v1.5.1) (2020-05-05)
+
+
+### Bug Fixes
+
+* run packageWeb after stack deploy if it's a new stack ([2f619ae](https://github.com/wizeline/serverless-amplify-plugin/commit/2f619ae6f9562717ebe44f82db23bc1151207411))
+
 # [1.5.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.4.0...v1.5.0) (2020-05-04)
 
 
