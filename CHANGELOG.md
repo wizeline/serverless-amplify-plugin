@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.5.1...v1.6.0) (2020-05-05)
+
+
+### Features
+
+* add environment variables passthrough to UI build command ([2e99c5b](https://github.com/wizeline/serverless-amplify-plugin/commit/2e99c5b9d8be470c2a60e5b49ade99e2329b95a4))
+
 ## [1.5.1](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.5.0...v1.5.1) (2020-05-05)
 
 
