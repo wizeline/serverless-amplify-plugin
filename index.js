@@ -87,6 +87,7 @@ class ServerlessAmplifyPlugin {
       domainName,
       redirectNakedToWww = false,
       name = serviceObject.name,
+      buildCommandEnvVars = {},
       stage = 'PRODUCTION',
       buildSpec = `version: 0.1
 frontend:
@@ -104,6 +105,9 @@ frontend:
       - node_modules/**/*`,
     } = amplify
 
+    buildCommandEnvVars.prefix = buildCommandEnvVars.prefix || ''
+    buildCommandEnvVars.allow = buildCommandEnvVars.allow || []
+
     this.amplifyOptions = {
       repository,
       accessTokenSecretName,
@@ -119,11 +123,21 @@ frontend:
       buildSpec,
       artifactBaseDirectory,
       preBuildWorkingDirectory,
+      buildCommandEnvVars
     }
   }
 
   packageWeb() {
     return new Promise((resolve, reject) => {
+      const envVars = {}
+      const { buildCommandEnvVars } = this.amplifyOptions
+      const allowedOutputs = this.outputs
+        .filter(output => buildCommandEnvVars.allow.includes(output.OutputKey))
+
+      allowedOutputs.forEach(output => {
+        envVars[`${buildCommandEnvVars.prefix}${output.OutputKey}`] = output.OutputValue
+      })
+
       const command = 'npm run build'
       let args = command.split(/\s+/);
       const cmd = args[0];
@@ -131,7 +145,10 @@ frontend:
       const baseDirectory = path.join(this.serverless.config.servicePath, this.amplifyOptions.preBuildWorkingDirectory)
       const execution = spawn(cmd, args, {
         cwd: baseDirectory,
-        env: process.env,
+        env: {
+          ...process.env,
+          ...envVars
+        },
         stdio: 'inherit'
       })
       execution.on('exit', (code) => {
@@ -186,6 +203,7 @@ frontend:
     }
     const stack = stacks.Stacks[0]
     const { Outputs } = stack
+    this.outputs = Outputs
     const amplifyDefualtDomainOutputKey = getAmplifyDefaultDomainOutputKey(this.namePascalCase)
     const amplifyDefualtDomainOutput = Outputs.find(output => output.OutputKey === amplifyDefualtDomainOutputKey)
     const amplifyDefualtDomainParts = amplifyDefualtDomainOutput.OutputValue.split('.')
