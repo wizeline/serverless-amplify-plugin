@@ -25,11 +25,15 @@ class ServerlessAmplifyPlugin {
           region: this.serverless.getProvider('aws').getRegion()
         })
         this.amplifyClient = amplifyClient
-        await this.packageWeb()
         await this.describeStack({ isPackageStep: true })
 
         const stackExists = Boolean(this.amplifyAppId)
+
+        // If the stack exists, package and create the deployment
+        // During the package step, then execute the deployment
+        // During the CloudFormation deployment
         if (stackExists) {
+          await this.packageWeb()
           const { jobId } = await createAmplifyDeployment({
             amplifyClient,
             appId: this.amplifyAppId,
@@ -39,6 +43,9 @@ class ServerlessAmplifyPlugin {
           this.amplifyDeploymentJobId = jobId
         }
       },
+      // TODO:
+      // If this is a stack update, deploy to Amplify *during* deployment
+      // instead of after so that it doesn't wait for rollback window
       'after:deploy:deploy': () => this.amplifyOptions.isManual && this.deployWeb(),
       'after:rollback:initialize': () => this.amplifyOptions.isManual && this.rollbackAmplify()
     }
@@ -193,6 +200,7 @@ frontend:
     if (!this.amplifyDeploymentJobId) {
       await this.describeStack({ isPackageStep: false })
 
+      await this.packageWeb()
       const { jobId } = await createAmplifyDeployment({
         amplifyClient: this.amplifyClient,
         appId: this.amplifyAppId,
