@@ -30,7 +30,8 @@ function makeMockServerless({ amplify, overrides = {} } = {}) {
           Outputs: {}
         }
       }
-    }
+    },
+    getProvider() { }
   }
 
   return _.merge(
@@ -51,6 +52,7 @@ describe('happy path', () => {
     const serverless = makeMockServerless()
 
     const serverlessAmplifyPluginInstance = new ServerlessAmplifyPlugin(serverless)
+    serverlessAmplifyPluginInstance.hooks['before:aws:common:validate:validate']()
     serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
     const { Resources, Outputs } = serverless.service.provider.compiledCloudFormationTemplate
     const {
@@ -140,6 +142,8 @@ artifacts:
     })
 
     const serverlessAmplifyPluginInstance = new ServerlessAmplifyPlugin(serverless)
+    serverlessAmplifyPluginInstance.hooks['before:aws:common:validate:validate']()
+    serverlessAmplifyPluginInstance.hooks['before:aws:common:validate:validate']()
     serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
 
     const { Resources, Outputs } = serverless.service.provider.compiledCloudFormationTemplate
@@ -225,6 +229,7 @@ artifacts:
     })
 
     const serverlessAmplifyPluginInstance = new ServerlessAmplifyPlugin(serverless)
+    serverlessAmplifyPluginInstance.hooks['before:aws:common:validate:validate']()
     serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
     expect(serverless.service.provider.compiledCloudFormationTemplate.Resources.MyServiceAmplifyApp.Properties.BuildSpec).toStrictEqual(`version: 0.1
 frontend:
@@ -254,6 +259,7 @@ frontend:
     })
 
     const serverlessAmplifyPluginInstance = new ServerlessAmplifyPlugin(serverless)
+    serverlessAmplifyPluginInstance.hooks['before:aws:common:validate:validate']()
     serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
     expect(serverless.service.provider.compiledCloudFormationTemplate.Resources.MyServiceAmplifyApp.Properties.AccessToken).toStrictEqual(serverless.service.custom.amplify.accessToken)
   })
@@ -266,6 +272,7 @@ frontend:
     })
 
     const serverlessAmplifyPluginInstance = new ServerlessAmplifyPlugin(serverless)
+    serverlessAmplifyPluginInstance.hooks['before:aws:common:validate:validate']()
     serverlessAmplifyPluginInstance.hooks['before:package:finalize']()
     expect(serverless.service.provider.compiledCloudFormationTemplate.Resources.MyServiceAmplifyBranch).toBeUndefined()
   })

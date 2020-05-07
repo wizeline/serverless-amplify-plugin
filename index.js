@@ -7,49 +7,59 @@ const { pascalCase } = require('pascal-case')
 const { put } = require('request-promise')
 const ora = require('ora')
 
+// TODO: replace ora with this.serverless.cli.log()
+
+const SERVERLESS_AMPLIFY_PLUGIN_META_FILE_PATH = '.serverless/serverless-amplify-plugin-meta.json'
+const ZIP_FILE_PATH = '.serverless/ui.zip'
 class ServerlessAmplifyPlugin {
   constructor(serverless, options) {
     this.serverless = serverless
     this.options = options
+
     this.hooks = {
-      'before:package:finalize': async () => {
+      'before:aws:common:validate:validate': async () => {
+        this.provider = this.serverless.getProvider('aws')
         this.setAmplifyOptions()
         this.namePascalCase = pascalCase(this.amplifyOptions.name)
-        this.addAmplifyResources()
 
-        if (!this.amplifyOptions.isManual) return
-
-        this.zipFilePath = '.serverless/ui.zip'
-
-        const credentials = new this.serverless.providers.aws.sdk.SharedIniFileCredentials({ profile: this.serverless.getProvider('aws').getProfile() })
-        const amplifyClient = new this.serverless.providers.aws.sdk.Amplify({
-          region: this.serverless.getProvider('aws').getRegion(),
-          credentials
-        })
-
-        this.amplifyClient = amplifyClient
-        await this.describeStack({ isPackageStep: true })
-
-        const stackExists = Boolean(this.amplifyAppId)
-
-        // If the stack exists, package and create the deployment
-        // During the package step, then execute the deployment
-        // During the CloudFormation deployment
-        if (stackExists) {
-          await this.packageWeb()
-          const { jobId } = await createAmplifyDeployment({
-            amplifyClient,
-            appId: this.amplifyAppId,
-            branchName: this.amplifyOptions.branch,
-            zipFilePath: this.zipFilePath
+        if (this.amplifyOptions.isManual) {
+          const credentials = new this.serverless.providers.aws.sdk.SharedIniFileCredentials({ profile: this.provider.getProfile() })
+          const amplifyClient = new this.serverless.providers.aws.sdk.Amplify({
+            region: this.provider.getRegion(),
+            credentials
           })
-          this.amplifyDeploymentJobId = jobId
+          this.amplifyClient = amplifyClient
+
+          await this.describeStack({ isPackageStep: true })
+
+          this.isExistingStack = Boolean(this.amplifyAppId)
         }
       },
-      // TODO:
-      // If this is a stack update, deploy to Amplify *during* deployment
-      // instead of after so that it doesn't wait for rollback window
-      'after:deploy:deploy': () => this.amplifyOptions.isManual && this.deployWeb(),
+      'before:package:finalize': async () => {
+        if (this.amplifyOptions.isManual) {
+          // If the stack exists, package and create the deployment
+          // During the package step, then execute the deployment
+          // During the CloudFormation deployment
+          if (this.isExistingStack) {
+            await this.packageWeb()
+            const { jobId } = await createAmplifyDeployment({
+              amplifyClient: this.amplifyClient,
+              appId: this.amplifyAppId,
+              branchName: this.amplifyOptions.branch,
+            })
+            this.amplifyDeploymentJobId = jobId
+            fs.writeFileSync(SERVERLESS_AMPLIFY_PLUGIN_META_FILE_PATH, JSON.stringify({
+              amplifyDeploymentJobId: jobId
+            }))
+          }
+        }
+
+        this.addAmplifyResources()
+      },
+      // Deploy after stack update for existing stacks
+      'before:aws:deploy:deploy:updateStack': () => this.amplifyOptions.isManual && this.isExistingStack && this.deployWeb(),
+      // Deploy after stack update for new stacks
+      'after:aws:deploy:deploy:updateStack': () => this.amplifyOptions.isManual && !this.isExistingStack && this.deployWeb(),
       'after:rollback:initialize': () => this.amplifyOptions.isManual && this.rollbackAmplify()
     }
     // this.commands = {
@@ -157,13 +167,13 @@ frontend:
       execution.on('exit', (code) => {
         if (code === 0) {
           const zipSpinner = ora()
-          zipSpinner.start(`Zipping to ${this.zipFilePath}...`)
-          const output = fs.createWriteStream(this.zipFilePath);
+          zipSpinner.start(`Zipping to ${ZIP_FILE_PATH}...`)
+          const output = fs.createWriteStream(ZIP_FILE_PATH);
           const buildDirectory = this.amplifyOptions.artifactBaseDirectory
           const archive = archiver('zip');
           output.on('close', () => {
             zipSpinner.succeed('UI zip created!')
-            resolve(this.zipFilePath);
+            resolve(ZIP_FILE_PATH);
           });
 
           archive.on('error', (err) => {
@@ -184,17 +194,17 @@ frontend:
     const describeStackSpinner = ora()
     const stackName = util.format('%s-%s',
       this.serverless.service.getServiceName(),
-      this.serverless.getProvider('aws').getStage()
+      this.provider.getStage()
     )
     describeStackSpinner.start('Getting stack outputs...')
     let stacks
     try {
-      stacks = await this.serverless.getProvider('aws').request(
+      stacks = await this.provider.request(
         'CloudFormation',
         'describeStacks',
         { StackName: stackName },
-        this.serverless.getProvider('aws').getStage(),
-        this.serverless.getProvider('aws').getRegion()
+        this.provider.getStage(),
+        this.provider.getRegion()
       )
     } catch (error) {
       if (isPackageStep) {
@@ -218,17 +228,24 @@ frontend:
   }
 
   async deployWeb() {
+    // If this.amplifyDeploymentJobId isn't set, we can assume it's either a
+    // new stack or we're deploying prepackaged via `sls deploy --package dir`
     if (!this.amplifyDeploymentJobId) {
-      await this.describeStack({ isPackageStep: false })
+      if (this.isExistingStack) {
+        const serverlessAMplifyPluginMetaFilePath = path.join(this.serverless.config.servicePath, SERVERLESS_AMPLIFY_PLUGIN_META_FILE_PATH)
+        const serverlessAmplifyPluginMeta = require(serverlessAMplifyPluginMetaFilePath)
 
-      await this.packageWeb()
-      const { jobId } = await createAmplifyDeployment({
-        amplifyClient: this.amplifyClient,
-        appId: this.amplifyAppId,
-        branchName: this.amplifyOptions.branch,
-        zipFilePath: this.zipFilePath,
-      })
-      this.amplifyDeploymentJobId = jobId
+        this.amplifyDeploymentJobId = serverlessAmplifyPluginMeta.amplifyDeploymentJobId
+      } else {
+        await this.describeStack({ isPackageStep: false })
+        await this.packageWeb()
+        const { jobId } = await createAmplifyDeployment({
+          amplifyClient: this.amplifyClient,
+          appId: this.amplifyAppId,
+          branchName: this.amplifyOptions.branch,
+        })
+        this.amplifyDeploymentJobId = jobId
+      }
     }
 
     return publishFileToAmplify({
@@ -262,6 +279,8 @@ frontend:
       Outputs,
       name,
       isManual,
+      isExistingStack: this.isExistingStack,
+      amplifyDeploymentJobId: this.amplifyDeploymentJobId,
       repository,
       accessToken,
       buildSpec,
@@ -288,6 +307,7 @@ frontend:
       })
     }
   }
+
   rollbackAmplify() { }
 }
 
@@ -295,7 +315,6 @@ async function createAmplifyDeployment({
   amplifyClient,
   appId,
   branchName,
-  zipFilePath
 }) {
   const createAmplifyDeploymentSpinner = ora()
   createAmplifyDeploymentSpinner.start('Creating Amplify Deployment...')
@@ -312,7 +331,7 @@ async function createAmplifyDeployment({
     createAmplifyDeploymentSpinner.succeed('Amplify Deployment created!')
     const uploadToS3Spinner = ora()
     uploadToS3Spinner.start('Uploading UI package to S3...')
-    await httpPutFile(zipFilePath, zipUploadUrl)
+    await httpPutFile(ZIP_FILE_PATH, zipUploadUrl)
     uploadToS3Spinner.succeed('UI Package uploaded to S3!')
     return { jobId }
   } catch (error) {
@@ -414,10 +433,16 @@ function getAmplifyDefaultDomainOutputKey(namePascalCase) {
   return `${namePascalCase}AmplifyDefaultDomain`
 }
 
+function getAmplifyDeploymentJobIdOutputKey(namePascalCase) {
+  return `AmplifyDeploymentOutputKey`
+}
+
 function addBaseResourcesAndOutputs({
   Resources,
   name,
   isManual,
+  isExistingStack,
+  amplifyDeploymentJobId,
   repository,
   accessToken,
   buildSpec,
@@ -431,10 +456,13 @@ function addBaseResourcesAndOutputs({
       BuildSpec: buildSpec
     }
   }
-
   if (!isManual) {
     Resources[`${namePascalCase}AmplifyApp`].Properties.Repository = repository
     Resources[`${namePascalCase}AmplifyApp`].Properties.AccessToken = accessToken
+  } else if (isExistingStack && amplifyDeploymentJobId) {
+    Outputs[getAmplifyDeploymentJobIdOutputKey(namePascalCase)] = {
+      "Value": amplifyDeploymentJobId
+    }
   }
 
   Outputs[getAmplifyDefaultDomainOutputKey(namePascalCase)] = {
