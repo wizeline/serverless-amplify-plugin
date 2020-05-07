@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.6.1...v1.6.2) (2020-05-07)
+
+
+### Bug Fixes
+
+* support for pre-packaged sls deploy --package ([90a131b](https://github.com/wizeline/serverless-amplify-plugin/commit/90a131b2b1ad85839fcedcbc835915883253af0b))
+
 ## [1.6.1](https://github.com/wizeline/serverless-amplify-plugin/compare/v1.6.0...v1.6.1) (2020-05-05)
 
 
