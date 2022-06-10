@@ -36,6 +36,6 @@
     "eslint-config-airbnb": "^18.1.0",
     "jest": "^25.3.0",
     "lodash": "^4.17.15",
-    "semantic-release": "^17.0.4"
+    "semantic-release": "^19.0.3"
   }
 }
