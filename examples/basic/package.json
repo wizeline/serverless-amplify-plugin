@@ -34,6 +34,6 @@
   },
   "devDependencies": {
     "@wizeline/serverless-amplify-plugin": "file:../..",
-    "serverless": "^1.67.3"
+    "serverless": "^3.27.0"
   }
 }
